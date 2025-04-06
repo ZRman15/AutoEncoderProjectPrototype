@@ -10,16 +10,16 @@ from video_autoencoder import VideoAutoencoder
 
 def evaluate_model():
     # Parameters
-    video_dir = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos"
+    video_dir = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos128"
     model_path = "/Users/zohaib/Desktop/University/Software Project/Prototype/video_autoencoder_final.pth"
     sequence_length = 5
     batch_size = 1  # Process one sequence at a time for visualization
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     
     # Create transforms
     transform = transforms.Compose([
         transforms.ToPILImage(),
-        transforms.Resize((146, 146)),
+        transforms.Resize((128, 128)),
         transforms.ToTensor(),
     ])
     

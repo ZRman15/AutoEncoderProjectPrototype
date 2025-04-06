@@ -12,11 +12,11 @@ import multiprocessing
 # Move all code into a function
 def train_model():
     # Parameters
-    video_dir = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos"  # Update this path
+    video_dir = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos128"  # Update this path
     sequence_length = 5
-    batch_size = 8
+    batch_size = 10
     learning_rate = 0.001
-    num_epochs = 50
+    num_epochs = 8
     latent_dim = 128
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
@@ -36,7 +36,7 @@ def train_model():
     # Create transforms
     transform = transforms.Compose([
         transforms.ToPILImage(),
-        transforms.Resize((146, 146)),  # Resize frames to match model's expected input size
+        transforms.Resize((128, 128)),  # Resize frames to match model's expected input size
         transforms.ToTensor(),
     ])
 

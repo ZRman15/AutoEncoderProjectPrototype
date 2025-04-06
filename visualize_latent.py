@@ -14,13 +14,13 @@ def visualize_latent_space():
     video_dir = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos"
     model_path = "/Users/zohaib/Desktop/University/Software Project/Prototype/video_autoencoder_final.pth"
     sequence_length = 5
-    batch_size = 16
+    batch_size = 10
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     
     # Create transforms
     transform = transforms.Compose([
         transforms.ToPILImage(),
-        transforms.Resize((146, 146)),
+        transforms.Resize((128, 128)),
         transforms.ToTensor(),
     ])
     

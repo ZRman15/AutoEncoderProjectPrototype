@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class VideoAutoencoder(nn.Module):
-    def __init__(self, sequence_length=5, in_channels=3, latent_dim=128, input_size=(146, 146)):
+    def __init__(self, sequence_length=5, in_channels=3, latent_dim=128, input_size=(128, 128)):
         """
         Autoencoder for video compression
         
@@ -10,7 +10,7 @@ class VideoAutoencoder(nn.Module):
             sequence_length (int): Number of frames in each sequence
             in_channels (int): Number of input channels (3 for RGB)
             latent_dim (int): Dimension of the latent space
-            input_size (tuple): Height and width of input frames (146, 146)
+            input_size (tuple): Height and width of input frames (128, 128)
         """
         super(VideoAutoencoder, self).__init__()
         
@@ -44,25 +44,27 @@ class VideoAutoencoder(nn.Module):
         
         # Decoder
         self.decoder = nn.Sequential(
-            # First transposed conv
-            nn.ConvTranspose2d(latent_dim, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
+            # First transposed conv: 8x8 -> 16x16
+            nn.ConvTranspose2d(latent_dim, 256, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(True),
-            
-            # Second transposed conv
-            nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
+    
+            # Second transposed conv: 16x16 -> 32x32
+            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(True),
-            
-            # Third transposed conv
-            nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
+    
+            # Third transposed conv: 32x32 -> 64x64
+            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(True),
-            
-            # Fourth transposed conv
-            nn.ConvTranspose2d(64, sequence_length*in_channels, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.Tanh()  # Use Tanh instead of Sigmoid for better gradient flow
+    
+            # Fourth transposed conv: 64x64 -> 128x128
+            nn.ConvTranspose2d(64, self.sequence_length * self.in_channels, kernel_size=4, stride=2, padding=1),
+            nn.Tanh()
         )
+
+        
         
     def forward(self, x):
         # x shape: (batch_size, sequence_length, channels, height, width)

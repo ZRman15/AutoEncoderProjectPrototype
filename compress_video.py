@@ -5,7 +5,7 @@ import numpy as np
 from torchvision import transforms
 from video_autoencoder import VideoAutoencoder
 
-def compress_video(input_video_path, output_video_path, model_path, sequence_length=5, latent_dim=146):
+def compress_video(input_video_path, output_video_path, model_path, sequence_length=5, latent_dim=128):
     """
     Compress a video using the trained autoencoder and save the reconstructed video
     """
@@ -43,7 +43,7 @@ def compress_video(input_video_path, output_video_path, model_path, sequence_len
     # Create transform for preprocessing frames
     preprocess = transforms.Compose([
         transforms.ToPILImage(),
-        transforms.Resize((146, 146)),
+        transforms.Resize((128, 128)),
         transforms.ToTensor(),
     ])
     
@@ -171,7 +171,7 @@ def compress_video(input_video_path, output_video_path, model_path, sequence_len
     print(f"File size compression ratio: {compression_ratio:.2f}x")
 
 if __name__ == "__main__":
-    input_video = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos/sample_video.mp4"
+    input_video = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos128/vid1.mp4"
     output_video = "/Users/zohaib/Desktop/University/Software Project/Prototype/compressed_video.mp4"
     model_path = "/Users/zohaib/Desktop/University/Software Project/Prototype/video_autoencoder_final.pth"
     

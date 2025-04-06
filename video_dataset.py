@@ -66,8 +66,27 @@ class VideoFrameDataset(Dataset):
         
         cap.release()
         
+        # Handle empty frames list
+        if len(frames) == 0:
+            # Create a dummy tensor with the right dimensions (128x128)
+            return torch.zeros((self.sequence_length, 3, 128, 128))
+        
+        # Handle incomplete sequences by duplicating the last frame
+        if len(frames) < self.sequence_length:
+            last_frame = frames[-1]
+            while len(frames) < self.sequence_length:
+                frames.append(last_frame.clone())
+        
         # Stack frames into a single tensor
-        # Shape: (sequence_length, channels, height, width)
         sequence = torch.stack(frames)
+        
+        # Ensure all frames have the correct size (128x128)
+        if sequence.shape[2] != 128 or sequence.shape[3] != 128:
+            sequence = torch.nn.functional.interpolate(
+                sequence, 
+                size=(128, 128), 
+                mode='bilinear', 
+                align_corners=False
+            )
         
         return sequence
