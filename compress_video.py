@@ -9,58 +9,58 @@ def compress_video(input_video_path, output_video_path, model_path, sequence_len
     """
     Compress a video using the trained autoencoder and save the reconstructed video
     """
-    # Check if input video exists
+    # error check for input video
     if not os.path.exists(input_video_path):
         print(f"Error: Input video not found at {input_video_path}")
         return
     
-    # Set device
+    # set device
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    # Load the trained model
+    # load the final model
     model = VideoAutoencoder(sequence_length=sequence_length, in_channels=3, latent_dim=latent_dim)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model = model.to(device)
     model.eval()  # Set to evaluation mode
     
-    # Open the input video
+    # open the input video
     cap = cv2.VideoCapture(input_video_path)
     if not cap.isOpened():
         print(f"Error: Could not open video {input_video_path}")
         return
     
-    # Get video properties
+    # getting video properties
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     
     # Create a VideoWriter object for the output video
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter.fourcc(*'mp4v')
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
     
-    # Create transform for preprocessing frames
+    # transform for preprocessing frames
     preprocess = transforms.Compose([
         transforms.ToPILImage(),
         transforms.Resize((128, 128)),
         transforms.ToTensor(),
     ])
     
-    # Create transform for postprocessing frames
+    # transform for post-processing frames
     postprocess = transforms.Compose([
         transforms.ToPILImage(),
         transforms.Resize((height, width)),
     ])
     
-    # Process the video in sequences
+    # process the video using a buffer
     frames_buffer = []
     processed_frames = 0
     total_output_frames = 0
     
     print(f"Processing video with {frame_count} frames...")
     
-    # Read all frames first
+    # read all frames 
     all_frames = []
     while True:
         ret, frame = cap.read()
@@ -70,98 +70,95 @@ def compress_video(input_video_path, output_video_path, model_path, sequence_len
     
     print(f"Read {len(all_frames)} frames from video")
     
-    # Process frames in sliding window fashion
+    # process frames linearly
     for i, frame in enumerate(all_frames):
-        # Convert BGR to RGB
+        # convert BGR to RGB
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
-        # Preprocess the frame
+        # preprocess the frame
         frame_tensor = preprocess(frame_rgb)
         
-        # Add to buffer
+        # add to buffer
         frames_buffer.append(frame_tensor)
         
-        # Process when buffer reaches sequence_length
+        # process when buffer reaches sequence_length
         if len(frames_buffer) == sequence_length:
-            # Create a batch with a single sequence
+            # making batch with a single sequence
             sequence = torch.stack(frames_buffer).unsqueeze(0).to(device)
             
-            # Process through the model
+            # pass through model
             with torch.no_grad():
                 reconstructed, _ = model(sequence)
             
-            # Process the middle frame (to reduce boundary artifacts)
+
+            # processing the middle frame
             middle_idx = sequence_length // 2
             reconstructed_frame = reconstructed[0, middle_idx].cpu()
             
-            # Convert tensor to PIL image and resize back to original dimensions
+
+            # convert tensor to PIL image and resize back to original dimensions
             reconstructed_pil = postprocess(reconstructed_frame)
             
-            # Convert PIL image to numpy array and then to BGR for OpenCV
+            # convert PIL image to numpy array and then to BGR for OpenCV
             reconstructed_np = np.array(reconstructed_pil)
             reconstructed_bgr = cv2.cvtColor(reconstructed_np, cv2.COLOR_RGB2BGR)
             
-            # Write to output video
+            # write to output video file
             out.write(reconstructed_bgr)
             total_output_frames += 1
             
-            # Remove the first frame from buffer
+            # remove the first frame from buffer
             frames_buffer.pop(0)
             
-            # Update progress
+            # print progress
             processed_frames += 1
             if processed_frames % 10 == 0:
                 print(f"Processed {processed_frames}/{len(all_frames)} frames ({processed_frames/len(all_frames)*100:.1f}%)")
     
-    # Process any remaining frames in the buffer (for the last few frames)
+    
     remaining_frames = len(frames_buffer)
     if remaining_frames > 0:
         print(f"Processing remaining {remaining_frames} frames...")
         
-        # Pad the buffer to ensure it has exactly sequence_length frames
+        # paddding the buffer to avoid sequence_length error
         while len(frames_buffer) < sequence_length:
-            # Duplicate the last frame to pad the sequence
             frames_buffer.append(frames_buffer[-1].clone())
         
-        # Now process each remaining frame one by one
+        #  process remaining frames
         for i in range(remaining_frames):
-            # Create a batch with the current buffer
             sequence = torch.stack(frames_buffer).unsqueeze(0).to(device)
             
-            # Process through the model
+            # send through model
             with torch.no_grad():
                 reconstructed, _ = model(sequence)
             
-            # Process the first frame (which is the next one we need)
             reconstructed_frame = reconstructed[0, 0].cpu()
             
-            # Convert tensor to PIL image and resize back to original dimensions
+            # convert tensor to PIL image and resize back to original dimensions
             reconstructed_pil = postprocess(reconstructed_frame)
             
-            # Convert PIL image to numpy array and then to BGR for OpenCV
+            # convert PIL image to numpy array and then to BGR for OpenCV
             reconstructed_np = np.array(reconstructed_pil)
             reconstructed_bgr = cv2.cvtColor(reconstructed_np, cv2.COLOR_RGB2BGR)
             
-            # Write to output video
+            # write to output video file
             out.write(reconstructed_bgr)
             total_output_frames += 1
-            
-            # Remove the first frame and add a duplicate of the last frame
             frames_buffer.pop(0)
             frames_buffer.append(frames_buffer[-1].clone())
             
-            # Update progress
+            # update in console
             processed_frames += 1
             print(f"Processed remaining frame {i+1}/{remaining_frames}")
     
-    # Release resources
+    # release
     cap.release()
     out.release()
     
     print(f"Video compression complete. Output saved to {output_video_path}")
     print(f"Total input frames: {len(all_frames)}, Total output frames: {total_output_frames}")
     
-    # Calculate file sizes for comparison
+    # calculate file sizes in MB
     original_size = os.path.getsize(input_video_path)
     compressed_size = os.path.getsize(output_video_path)
     compression_ratio = original_size / compressed_size if compressed_size > 0 else 0
@@ -171,7 +168,7 @@ def compress_video(input_video_path, output_video_path, model_path, sequence_len
     print(f"File size compression ratio: {compression_ratio:.2f}x")
 
 if __name__ == "__main__":
-    input_video = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos128/vid1.mp4"
+    input_video = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos/Test3.mp4"
     output_video = "/Users/zohaib/Desktop/University/Software Project/Prototype/compressed_video.mp4"
     model_path = "/Users/zohaib/Desktop/University/Software Project/Prototype/video_autoencoder_final.pth"
     

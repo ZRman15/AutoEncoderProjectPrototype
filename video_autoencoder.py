@@ -21,45 +21,45 @@ class VideoAutoencoder(nn.Module):
         
         # Encoder
         self.encoder = nn.Sequential(
-            # First conv layer
-            nn.Conv2d(sequence_length*in_channels, 64, kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(64),  # Add batch normalization
-            nn.LeakyReLU(0.2, inplace=True),  # Use LeakyReLU instead of ReLU
+            # first  conv: 128x128 -> 64x64
+            nn.Conv2d(sequence_length*in_channels, 64, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm2d(64),  # normalization
+            nn.LeakyReLU(0.2, inplace=True),  # use LeakyReLU 
             
-            # Second conv layer
-            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
+            # second  conv: 64x64 -> 32x32
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             
-            # Third conv layer
-            nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1),
+            # third conv layer
+            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2, inplace=True),
             
-            # Fourth conv layer
-            nn.Conv2d(256, latent_dim, kernel_size=3, stride=2, padding=1),
+            # fourth conv layer
+            nn.Conv2d(256, latent_dim, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(latent_dim),
             nn.LeakyReLU(0.2, inplace=True),
         )
         
         # Decoder
         self.decoder = nn.Sequential(
-            # First transposed conv: 8x8 -> 16x16
+            # first transposed conv: 8x8 -> 16x16
             nn.ConvTranspose2d(latent_dim, 256, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(True),
     
-            # Second transposed conv: 16x16 -> 32x32
+            # second transposed conv: 16x16 -> 32x32
             nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(True),
     
-            # Third transposed conv: 32x32 -> 64x64
+            # third transposed conv: 32x32 -> 64x64
             nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(True),
     
-            # Fourth transposed conv: 64x64 -> 128x128
+            # fourth transposed conv: 64x64 -> 128x128
             nn.ConvTranspose2d(64, self.sequence_length * self.in_channels, kernel_size=4, stride=2, padding=1),
             nn.Tanh()
         )

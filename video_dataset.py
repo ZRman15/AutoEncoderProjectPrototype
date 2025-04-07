@@ -13,17 +13,17 @@ class VideoFrameDataset(Dataset):
         Args:
             video_dir (str): Directory containing video files
             sequence_length (int): Number of consecutive frames to include in each sample
-            transform (callable, optional): Optional transform to be applied on frames
+            transform (callable): transform to be applied on frames ( in train_video_autoencoder.py)
         """
         self.video_dir = video_dir
         self.sequence_length = sequence_length
         self.transform = transform
         
-        # Get all video files
+        # get videos
         self.video_files = [f for f in os.listdir(video_dir) 
                            if f.endswith(('.mp4', '.avi', '.mov'))]
         
-        # Create a mapping of sample indices to (video_idx, start_frame)
+        # map of sample indices to video_idx, start_frame
         self.samples = []
         for video_idx, video_file in enumerate(self.video_files):
             video_path = os.path.join(video_dir, video_file)
@@ -42,7 +42,7 @@ class VideoFrameDataset(Dataset):
         video_idx, start_frame = self.samples[idx]
         video_path = os.path.join(self.video_dir, self.video_files[video_idx])
         
-        # Load the sequence of frames
+        # loading the sequence of frames
         cap = cv2.VideoCapture(video_path)
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
         
@@ -52,35 +52,35 @@ class VideoFrameDataset(Dataset):
             if not ret:
                 break
                 
-            # Convert BGR to RGB
+            # convert BGR to RGB
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             
-            # Apply transforms if specified
+            # apply transforms
             if self.transform:
                 frame = self.transform(frame)
             else:
-                # Default conversion to tensor and normalization
+                # conversion to tensor and normalization
                 frame = torch.from_numpy(frame.transpose((2, 0, 1))).float() / 255.0
                 
             frames.append(frame)
         
         cap.release()
         
-        # Handle empty frames list
+        # handle empty frames list
         if len(frames) == 0:
             # Create a dummy tensor with the right dimensions (128x128)
             return torch.zeros((self.sequence_length, 3, 128, 128))
         
-        # Handle incomplete sequences by duplicating the last frame
+        # handle incomplete sequences by duplicating the last frame
         if len(frames) < self.sequence_length:
             last_frame = frames[-1]
             while len(frames) < self.sequence_length:
                 frames.append(last_frame.clone())
         
-        # Stack frames into a single tensor
+        # stack frames
         sequence = torch.stack(frames)
         
-        # Ensure all frames have the correct size (128x128)
+        # check shape of all the frames
         if sequence.shape[2] != 128 or sequence.shape[3] != 128:
             sequence = torch.nn.functional.interpolate(
                 sequence, 

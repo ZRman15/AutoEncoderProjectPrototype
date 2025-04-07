@@ -7,12 +7,11 @@ from torchvision import transforms
 import matplotlib.pyplot as plt
 from video_dataset import VideoFrameDataset
 from video_autoencoder import VideoAutoencoder
-import multiprocessing
 
-# Move all code into a function
+
 def train_model():
-    # Parameters
-    video_dir = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos128"  # Update this path
+    # parameters for model training 
+    video_dir = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos"  #video directory
     sequence_length = 5
     batch_size = 10
     learning_rate = 0.001
@@ -20,10 +19,7 @@ def train_model():
     latent_dim = 128
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
-    # Create directory for videos if it doesn't exist
-    os.makedirs(video_dir, exist_ok=True)
-
-    # Check if there are video files in the directory
+    # check if there are video files in the directory
     video_files = [f for f in os.listdir(video_dir) if f.endswith(('.mp4', '.avi', '.mov'))]
     if not video_files:
         print(f"Error: No video files found in {video_dir}")
@@ -33,54 +29,54 @@ def train_model():
     else:
         print(f"Found {len(video_files)} video files: {video_files}")
 
-    # Create transforms
+    # create transforms
     transform = transforms.Compose([
         transforms.ToPILImage(),
-        transforms.Resize((128, 128)),  # Resize frames to match model's expected input size
+        transforms.Resize((128, 128)),  # resize frames to match model's expected input size
         transforms.ToTensor(),
     ])
 
-    # Create dataset and dataloader
+    # create dataset and dataloader
     try:
         dataset = VideoFrameDataset(video_dir, sequence_length=sequence_length, transform=transform)
         print(f"Dataset created with {len(dataset)} samples")
         
         if len(dataset) == 0:
-            print("Error: Dataset is empty. Check that your videos contain enough frames.")
+            print("Error: Dataset is empty.")
             exit(1)
-            
-        # Set num_workers=0 to avoid multiprocessing issues
+
+        # num_workers=0 to avoid issues with DataLoader / not really useful for windows    
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     except Exception as e:
         print(f"Error creating dataset: {str(e)}")
         exit(1)
 
-    # Create model, loss function, and optimizer
+    # create model, loss function, and optimizer
     model = VideoAutoencoder(sequence_length=sequence_length, in_channels=3, latent_dim=latent_dim).to(device)
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    # Training loop
+    # training loop
     losses = []
 
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         for batch_idx, data in enumerate(dataloader):
-            # Move data to device
+            # moving data to device 
             data = data.to(device)
             
-            # Forward pass
+            # forward
             reconstructed, latent = model(data)
             
-            # Calculate loss
+            # calculating loss
             loss = criterion(reconstructed, data)
             
-            # Backward pass and optimize
+            # backward pass and optimize
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
-            # Update statistics
+            # update model stats
             epoch_loss += loss.item()
             
             if batch_idx % 10 == 0:
@@ -90,7 +86,7 @@ def train_model():
         losses.append(avg_epoch_loss)
         print(f"Epoch {epoch+1}/{num_epochs}, Average Loss: {avg_epoch_loss:.6f}")
         
-        # Save model checkpoint
+        # save model checkpoint every 5 epochs
         if (epoch + 1) % 5 == 0:
             torch.save({
                 'epoch': epoch,
@@ -99,7 +95,7 @@ def train_model():
                 'loss': avg_epoch_loss,
             }, f"/Users/zohaib/Desktop/University/Software Project/Prototype/model_checkpoint_epoch_{epoch+1}.pth")
 
-    # Plot loss curve
+    # plot loss curve
     plt.figure(figsize=(10, 5))
     plt.plot(losses)
     plt.title('Training Loss')
@@ -109,9 +105,8 @@ def train_model():
     plt.savefig("/Users/zohaib/Desktop/University/Software Project/Prototype/training_loss.png")
     plt.show()
 
-    # Save the final model
+    # save the final trained model
     torch.save(model.state_dict(), "/Users/zohaib/Desktop/University/Software Project/Prototype/video_autoencoder_final.pth")
 
-# Simplified for macOS on Silicon Mac
 if __name__ == '__main__':
     train_model()
