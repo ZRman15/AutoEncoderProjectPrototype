@@ -2,6 +2,7 @@ import os
 import torch
 import cv2
 import numpy as np
+import time
 from torchvision import transforms
 from video_autoencoder import VideoAutoencoder
 
@@ -9,6 +10,9 @@ def compress_video(input_video_path, output_video_path, model_path, sequence_len
     """
     Compress a video using the trained autoencoder and save the reconstructed video
     """
+    # Start timing the compression process
+    start_time = time.time()
+    
     # error check for input video
     if not os.path.exists(input_video_path):
         print(f"Error: Input video not found at {input_video_path}")
@@ -155,8 +159,12 @@ def compress_video(input_video_path, output_video_path, model_path, sequence_len
     cap.release()
     out.release()
     
+    # Calculate total compression time
+    total_time = time.time() - start_time
+    
     print(f"Video compression complete. Output saved to {output_video_path}")
     print(f"Total input frames: {len(all_frames)}, Total output frames: {total_output_frames}")
+    print(f"Compression time: {total_time:.2f} seconds ({total_time/60:.2f} minutes)")
     
     # calculate file sizes in MB
     original_size = os.path.getsize(input_video_path)
@@ -166,9 +174,15 @@ def compress_video(input_video_path, output_video_path, model_path, sequence_len
     print(f"Original video size: {original_size/1024/1024:.2f} MB")
     print(f"Compressed video size: {compressed_size/1024/1024:.2f} MB")
     print(f"File size compression ratio: {compression_ratio:.2f}x")
+    
+    # Calculate and print processing speed
+    frames_per_second = len(all_frames) / total_time if total_time > 0 else 0
+    print(f"Processing speed: {frames_per_second:.2f} frames per second")
+    
+    return total_time
 
 if __name__ == "__main__":
-    input_video = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos/Test3.mp4"
+    input_video = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos/alphabet.mp4"
     output_video = "/Users/zohaib/Desktop/University/Software Project/Prototype/compressed_video.mp4"
     model_path = "/Users/zohaib/Desktop/University/Software Project/Prototype/video_autoencoder_final.pth"
     

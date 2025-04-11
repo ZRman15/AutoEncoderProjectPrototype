@@ -10,7 +10,7 @@ from video_autoencoder import VideoAutoencoder
 
 def evaluate_model():
     # Parameters
-    video_dir = "/Users/zohaib/Desktop/University/Software Project/Prototype/videos128"
+    video_dir = "/Users/zohaib/Desktop/University/Software Project/Prototype/test_videos"
     model_path = "/Users/zohaib/Desktop/University/Software Project/Prototype/video_autoencoder_final.pth"
     sequence_length = 5
     batch_size = 1  # Process one sequence at a time for visualization

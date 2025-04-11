@@ -1,0 +1,5 @@
+Video: /Users/zohaib/Desktop/University/Software Project/Prototype/videos/Test2.mp4
+Compressed video: /Users/zohaib/Desktop/University/Software Project/Prototype/psnr_evaluation/compressed_Test2.mp4
+Average PSNR: 24.25 dB
+Min PSNR: 23.72 dB
+Max PSNR: 24.81 dB

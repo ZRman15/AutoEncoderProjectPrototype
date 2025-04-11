@@ -1,0 +1,61 @@
+// Video Autoencoder Architecture
+digraph VideoAutoencoder {
+	dpi=300 margin=0.4 rankdir=TB size="12,20"
+	node [fontname=Arial margin="0.3,0.1" shape=box style="filled,rounded"]
+	edge [arrowsize=0.8 color="#404040" penwidth=1.5]
+	input [label="Input: (B, 5, 3, 128, 128)
+Batch of video sequences" fillcolor="#AED6F1"]
+	reshape_in [label="Reshape & Scale
+(B, 15, 128, 128)
+Values scaled to [-1, 1]" fillcolor="#AED6F1"]
+	subgraph cluster_encoder {
+		bgcolor="#E8F8F5" color="#2E8B57" fontcolor=white fontname="Arial Bold" label=Encoder style=filled
+		enc1 [label="Convolution: 15 → 64
+4×4 kernel, stride 2
+128×128 → 64×64" fillcolor="#D5F5E3"]
+		enc2 [label="Convolution: 64 → 128
+4×4 kernel, stride 2
+64×64 → 32×32" fillcolor="#D5F5E3"]
+		enc3 [label="Convolution: 128 → 256
+4×4 kernel, stride 2
+32×32 → 16×16" fillcolor="#D5F5E3"]
+		enc4 [label="Convolution: 256 → 128
+4×4 kernel, stride 2
+16×16 → 8×8" fillcolor="#D5F5E3"]
+	}
+	latent [label="Latent Representation
+(B, 128, 8, 8)" fillcolor="#FAD7A0"]
+	subgraph cluster_decoder {
+		bgcolor="#F5EEF8" color="#8E44AD" fontcolor=white fontname="Arial Bold" label=Decoder style=filled
+		dec1 [label="Transposed Convolution: 128 → 256
+4×4 kernel, stride 2
+8×8 → 16×16" fillcolor="#D7BDE2"]
+		dec2 [label="Transposed Convolution: 256 → 128
+4×4 kernel, stride 2
+16×16 → 32×32" fillcolor="#D7BDE2"]
+		dec3 [label="Transposed Convolution: 128 → 64
+4×4 kernel, stride 2
+32×32 → 64×64" fillcolor="#D7BDE2"]
+		dec4 [label="Transposed Convolution: 64 → 15
+4×4 kernel, stride 2
+64×64 → 128×128
+Tanh activation" fillcolor="#D7BDE2"]
+	}
+	reshape_out [label="Scale & Reshape
+Values scaled from [-1, 1] to [0, 1]
+(B, 5, 3, 128, 128)" fillcolor="#F5CBA7"]
+	output [label="Reconstructed Video
+(B, 5, 3, 128, 128)" fillcolor="#F5CBA7"]
+	input -> reshape_in
+	reshape_in -> enc1
+	enc1 -> enc2
+	enc2 -> enc3
+	enc3 -> enc4
+	enc4 -> latent
+	latent -> dec1
+	dec1 -> dec2
+	dec2 -> dec3
+	dec3 -> dec4
+	dec4 -> reshape_out
+	reshape_out -> output
+}

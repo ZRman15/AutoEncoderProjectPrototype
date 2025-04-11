@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import matplotlib.pyplot as plt
+import time
 from video_dataset import VideoFrameDataset
 from video_autoencoder import VideoAutoencoder
 
@@ -45,7 +46,7 @@ def train_model():
             print("Error: Dataset is empty.")
             exit(1)
 
-        # num_workers=0 to avoid issues with DataLoader / not really useful for windows    
+        # num_workers=0 to avoid issues with DataLoader / not really useful for macOS    
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     except Exception as e:
         print(f"Error creating dataset: {str(e)}")
@@ -58,8 +59,12 @@ def train_model():
 
     # training loop
     losses = []
-
+    
+    # starting time
+    start_time = time.time()
+    
     for epoch in range(num_epochs):
+        epoch_start_time = time.time()
         epoch_loss = 0.0
         for batch_idx, data in enumerate(dataloader):
             # moving data to device 
@@ -84,7 +89,10 @@ def train_model():
         
         avg_epoch_loss = epoch_loss / len(dataloader)
         losses.append(avg_epoch_loss)
-        print(f"Epoch {epoch+1}/{num_epochs}, Average Loss: {avg_epoch_loss:.6f}")
+        
+        # Calculate and display time for this epoch
+        epoch_time = time.time() - epoch_start_time
+        print(f"Epoch {epoch+1}/{num_epochs}, Average Loss: {avg_epoch_loss:.6f}, Time: {epoch_time:.2f} seconds")
         
         # save model checkpoint every 5 epochs
         if (epoch + 1) % 5 == 0:
@@ -95,10 +103,14 @@ def train_model():
                 'loss': avg_epoch_loss,
             }, f"/Users/zohaib/Desktop/University/Software Project/Prototype/model_checkpoint_epoch_{epoch+1}.pth")
 
+    # Calculate total training time
+    total_training_time = time.time() - start_time
+    print(f"Total training time: {total_training_time:.2f} seconds ({total_training_time/60:.2f} minutes)")
+
     # plot loss curve
     plt.figure(figsize=(10, 5))
     plt.plot(losses)
-    plt.title('Training Loss')
+    plt.title(f'Training Loss (Total time: {total_training_time:.2f}s, Samples: {len(dataset)})')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.grid(True)
@@ -107,6 +119,8 @@ def train_model():
 
     # save the final trained model
     torch.save(model.state_dict(), "/Users/zohaib/Desktop/University/Software Project/Prototype/video_autoencoder_final.pth")
+    
+    return total_training_time
 
 if __name__ == '__main__':
     train_model()
